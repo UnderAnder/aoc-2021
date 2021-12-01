@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	fmt.Println(first(file))
+	fmt.Println(second(file))
 }
 
 func first(file io.Reader) int {
@@ -34,4 +34,34 @@ func first(file io.Reader) int {
 	}
 	counter-- // no previous measurement
 	return counter
+}
+
+func second(file io.Reader) int {
+	const threeMeasurement = 3
+	var measurement, counter int
+	var err error
+	temp := make([]int, threeMeasurement, threeMeasurement)
+	scanner := bufio.NewScanner(file)
+	for i := 0; scanner.Scan(); i++ {
+		measurement, err = strconv.Atoi(scanner.Text())
+		if err != nil {
+			log.Fatal(err)
+		}
+		sum1 := sum(temp)
+		temp[i%threeMeasurement] = measurement
+		sum2 := sum(temp)
+		if sum2 > sum1 {
+			counter++
+		}
+	}
+	counter -= threeMeasurement // no measurement
+	return counter
+}
+
+func sum(s []int) int {
+	var result int
+	for _, v := range s {
+		result += v
+	}
+	return result
 }
