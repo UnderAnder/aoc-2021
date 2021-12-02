@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -15,10 +16,13 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	fmt.Println(second(file))
+	buf1 := &bytes.Buffer{}
+	buf2 := io.TeeReader(file, buf1)
+	fmt.Printf("First answer: %d\n", part1(buf2))
+	fmt.Printf("Second answer: %d\n", part2(buf1))
 }
 
-func first(file io.Reader) int {
+func part1(file io.Reader) int {
 	var measurement, temp, counter int
 	var err error
 	scanner := bufio.NewScanner(file)
@@ -36,9 +40,9 @@ func first(file io.Reader) int {
 	return counter
 }
 
-func second(file io.Reader) int {
+func part2(file io.Reader) int {
 	const threeMeasurement = 3
-	var measurement, counter int
+	var measurement, counter, sum1 int
 	var err error
 	temp := make([]int, threeMeasurement, threeMeasurement)
 	scanner := bufio.NewScanner(file)
@@ -47,12 +51,12 @@ func second(file io.Reader) int {
 		if err != nil {
 			log.Fatal(err)
 		}
-		sum1 := sum(temp)
 		temp[i%threeMeasurement] = measurement
 		sum2 := sum(temp)
 		if sum2 > sum1 {
 			counter++
 		}
+		sum1 = sum2
 	}
 	counter -= threeMeasurement // no measurement
 	return counter
