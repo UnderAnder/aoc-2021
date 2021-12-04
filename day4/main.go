@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -17,6 +16,7 @@ type cell struct {
 	num  int
 	mark bool
 }
+
 type board struct {
 	cells [size][size]cell
 }
@@ -73,33 +73,28 @@ func (b *board) check(num, i, j int) (bool, int) {
 	return win, score
 }
 
-func part1(file io.Reader) int {
-	var draws, boardNums []int
+func solve(file io.Reader) (int, int) {
 	var boards []*board
 	var win bool
-	var answer int
+	var answer, answer1, answer2, winCount int
+	boardNums := make([]int, 0, size*size)
 
 	scanner := bufio.NewScanner(file)
-	for i := 0; scanner.Scan(); i++ {
-		if i == 0 {
-			for _, v := range strings.Split(scanner.Text(), ",") {
-				num, err := strconv.Atoi(v)
-				if err != nil {
-					log.Fatalf("can't parse draw")
-				}
-				draws = append(draws, num)
-			}
-			continue
-		}
-		if scanner.Text() == "" {
-			if len(boardNums) == 0 {
-				continue
-			}
-			boards = append(boards, newBoard(boardNums))
-			boardNums = make([]int, 0, size*size)
-			continue
-		}
 
+	// draws
+	scanner.Scan()
+	drawsStr := strings.Split(scanner.Text(), ",")
+	draws := make([]int, 0, len(drawsStr))
+	for _, v := range drawsStr {
+		num, err := strconv.Atoi(v)
+		if err != nil {
+			log.Fatalf("can't parse draw")
+		}
+		draws = append(draws, num)
+	}
+
+	// boards
+	for i := 0; scanner.Scan(); i++ {
 		for _, v := range strings.Fields(scanner.Text()) {
 			num, err := strconv.Atoi(v)
 			if err != nil {
@@ -107,72 +102,31 @@ func part1(file io.Reader) int {
 			}
 			boardNums = append(boardNums, num)
 		}
-	}
-	boards = append(boards, newBoard(boardNums))
-
-	for _, draw := range draws {
-		for _, b := range boards {
-			win, answer = b.mark(draw)
-			if win {
-				return answer
-			}
-		}
-	}
-	return -1
-}
-
-func part2(file io.Reader) int {
-	var draws, boardNums []int
-	var boards []*board
-	var win bool
-	var answer, winCount int
-
-	scanner := bufio.NewScanner(file)
-	for i := 0; scanner.Scan(); i++ {
-		if i == 0 {
-			for _, v := range strings.Split(scanner.Text(), ",") {
-				num, err := strconv.Atoi(v)
-				if err != nil {
-					log.Fatalf("can't parse draw")
-				}
-				draws = append(draws, num)
-			}
-			continue
-		}
-		if scanner.Text() == "" {
-			if len(boardNums) == 0 {
-				continue
-			}
+		if len(boardNums) == size*size {
 			boards = append(boards, newBoard(boardNums))
 			boardNums = make([]int, 0, size*size)
-			continue
-		}
-
-		for _, v := range strings.Fields(scanner.Text()) {
-			num, err := strconv.Atoi(v)
-			if err != nil {
-				log.Fatalf("can't parse board")
-			}
-			boardNums = append(boardNums, num)
 		}
 	}
-	boards = append(boards, newBoard(boardNums))
 
+	// solve
 	for _, draw := range draws {
 		for i := range boards {
-			if boards[i] != nil {
-				win, answer = boards[i].mark(draw)
-				if win {
-					winCount++
-					boards[i] = nil
-					if winCount == len(boards) {
-						return answer
-					}
+			if boards[i] == nil {
+				continue
+			}
+			if win, answer = boards[i].mark(draw); win {
+				winCount++
+				boards[i] = nil
+				if winCount == 1 {
+					answer1 = answer
+				}
+				if winCount == len(boards) {
+					answer2 = answer
 				}
 			}
 		}
 	}
-	return -1
+	return answer1, answer2
 }
 
 func main() {
@@ -181,8 +135,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	buf1 := &bytes.Buffer{}
-	buf2 := io.TeeReader(file, buf1)
-	fmt.Printf("First answer: %d\n", part1(buf2))
-	fmt.Printf("Second answer: %d\n", part2(buf1))
+	a1, a2 := solve(file)
+	fmt.Printf("First answer: %d\n", a1)
+	fmt.Printf("Second answer: %d\n", a2)
 }
