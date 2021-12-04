@@ -121,6 +121,60 @@ func part1(file io.Reader) int {
 	return -1
 }
 
+func part2(file io.Reader) int {
+	var draws, boardNums []int
+	var boards []*board
+	var win bool
+	var answer, winCount int
+
+	scanner := bufio.NewScanner(file)
+	for i := 0; scanner.Scan(); i++ {
+		if i == 0 {
+			for _, v := range strings.Split(scanner.Text(), ",") {
+				num, err := strconv.Atoi(v)
+				if err != nil {
+					log.Fatalf("can't parse draw")
+				}
+				draws = append(draws, num)
+			}
+			continue
+		}
+		if scanner.Text() == "" {
+			if len(boardNums) == 0 {
+				continue
+			}
+			boards = append(boards, newBoard(boardNums))
+			boardNums = make([]int, 0, size*size)
+			continue
+		}
+
+		for _, v := range strings.Fields(scanner.Text()) {
+			num, err := strconv.Atoi(v)
+			if err != nil {
+				log.Fatalf("can't parse board")
+			}
+			boardNums = append(boardNums, num)
+		}
+	}
+	boards = append(boards, newBoard(boardNums))
+
+	for _, draw := range draws {
+		for i := range boards {
+			if boards[i] != nil {
+				win, answer = boards[i].mark(draw)
+				if win {
+					winCount++
+					boards[i] = nil
+					if winCount == len(boards) {
+						return answer
+					}
+				}
+			}
+		}
+	}
+	return -1
+}
+
 func main() {
 	file, err := os.Open("input.txt")
 	if err != nil {
@@ -130,4 +184,5 @@ func main() {
 	buf1 := &bytes.Buffer{}
 	buf2 := io.TeeReader(file, buf1)
 	fmt.Printf("First answer: %d\n", part1(buf2))
+	fmt.Printf("Second answer: %d\n", part2(buf1))
 }
