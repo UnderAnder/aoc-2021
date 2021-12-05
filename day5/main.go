@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-const size = 5
-
 type point struct {
 	x, y int
 }
@@ -19,6 +17,8 @@ type point struct {
 type entry struct {
 	p1, p2 point
 }
+
+type field map[point]int
 
 func parse(file io.Reader) []entry {
 	entries := make([]entry, 0)
@@ -48,10 +48,10 @@ func mustAtoi(s string) int {
 	return i
 }
 
-func printField(field map[point]int) {
-	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j++ {
-			if v, ok := field[point{x: j, y: i}]; ok {
+func printTestField(f field, size int) {
+	for i := 0; i < size; i++ {
+		for j := 0; j < size; j++ {
+			if v, ok := f[point{x: j, y: i}]; ok {
 				fmt.Print(v)
 				continue
 			}
@@ -61,32 +61,19 @@ func printField(field map[point]int) {
 	}
 }
 
-func part1(entries []entry) int {
-	var answer int
-	field := make(map[point]int)
-
-	for _, e := range entries {
-		var start, end int
-		if e.p1.x == e.p2.x {
-			start, end = e.p1.y, e.p2.y
-			if e.p1.y > e.p2.y {
-				start, end = end, start
-			}
-			for i := start; i <= end; i++ {
-				field[point{e.p2.x, i}]++
-			}
-		}
-		if e.p1.y == e.p2.y {
-			start, end = e.p1.x, e.p2.x
-			if e.p1.x > e.p2.x {
-				start, end = end, start
-			}
-			for i := start; i <= end; i++ {
-				field[point{i, e.p2.y}]++
-			}
-		}
+func move(a, b int) int {
+	switch {
+	case a < b:
+		return a + 1
+	case a > b:
+		return a - 1
+	default:
+		return a
 	}
-	for _, i := range field {
+}
+
+func answer(f field) (answer int) {
+	for _, i := range f {
 		if i > 1 {
 			answer++
 		}
@@ -94,96 +81,38 @@ func part1(entries []entry) int {
 	return answer
 }
 
-func part2(entries []entry) int {
-	var answer int
-	field := make(map[point]int)
+func part1(entries []entry) int {
+	f := make(field)
 
 	for _, e := range entries {
-		var start, end int
-		if e.p1.x == e.p2.x {
-			start = e.p1.y
-			end = e.p2.y
-			if e.p1.y > e.p2.y {
-				start = e.p2.y
-				end = e.p1.y
+		start, end := e.p1, e.p2
+		i := start
+		for i != end {
+			if i.x == end.x || i.y == end.y {
+				f[i]++
 			}
-			for i := start; i <= end; i++ {
-				field[point{e.p2.x, i}]++
-			}
-			continue
+			i = point{move(i.x, end.x), move(i.y, end.y)}
 		}
-		if e.p1.y == e.p2.y {
-			start = e.p1.x
-			end = e.p2.x
-			if e.p1.x > e.p2.x {
-				start = e.p2.x
-				end = e.p1.x
-			}
-			for i := start; i <= end; i++ {
-				field[point{i, e.p2.y}]++
-			}
-			continue
+		if start.x == end.x || start.y == end.y {
+			f[i]++
 		}
-		if e.p2.y == e.p2.x && e.p1.y == e.p1.x {
-			start, end = e.p1.x, e.p2.x
-			if e.p1.x > e.p2.x {
-				start, end = end, start
-			}
+	}
 
-			for i := start; i <= end; i++ {
-				field[point{i, i}]++
-			}
-			continue
+	return answer(f)
+}
+
+func part2(entries []entry) int {
+	f := make(field)
+
+	for _, e := range entries {
+		start, end := e.p1, e.p2
+		for start != end {
+			f[start]++
+			start = point{move(start.x, end.x), move(start.y, end.y)}
 		}
-		if e.p1.x == e.p2.y && e.p1.y == e.p2.x {
-			start, end = e.p1.x, e.p2.x
-			if e.p1.x > e.p2.x {
-				start, end = end, start
-			}
-			j := end
-			for i := start; i <= end; i++ {
-				field[point{j, i}]++
-				j--
-			}
-		}
-		if e.p1.x+e.p2.y == e.p2.x+e.p1.y {
-			start, end = e.p1.x, e.p2.x
-			start2, end2 := e.p1.y, e.p2.y
-			if e.p1.x > e.p2.x {
-				start, end = end, start
-			}
-			if e.p1.y > e.p2.y {
-				start2, end2 = end2, start2
-			}
-			j := start2
-			for i := start; i <= end; i++ {
-				log.Printf("x:%d y:%d", i, j)
-				field[point{i, j}]++
-				j++
-			}
-		}
-		if e.p1.x+e.p1.y == e.p2.x+e.p2.y {
-			start, end = e.p1.x, e.p2.x
-			start2, end2 := e.p1.y, e.p2.y
-			if e.p1.x > e.p2.x {
-				start, end = end, start
-			}
-			if e.p1.y > e.p2.y {
-				start2, end2 = end2, start2
-			}
-			j := end2
-			for i := start; i <= end; i++ {
-				field[point{i, j}]++
-				j--
-			}
-		}
+		f[start]++
 	}
-	for _, i := range field {
-		if i > 1 {
-			answer++
-		}
-	}
-	return answer
+	return answer(f)
 }
 
 func main() {
