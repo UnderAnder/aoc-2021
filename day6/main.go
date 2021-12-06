@@ -10,15 +10,15 @@ import (
 	"strings"
 )
 
-type fishes []int
+type fishes map[int]int
 
 func parse(file io.Reader) fishes {
-	fishesInit := make(fishes, 0)
+	fishesInit := make(fishes)
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 	init := strings.Split(scanner.Text(), ",")
 	for _, s := range init {
-		fishesInit = append(fishesInit, mustAtoi(s))
+		fishesInit[mustAtoi(s)]++
 	}
 	return fishesInit
 }
@@ -31,23 +31,46 @@ func mustAtoi(s string) int {
 	return i
 }
 
-func part1(f fishes) int {
+func calcFishes(f fishes) fishes {
 	const (
-		days       = 80
 		firstCycle = 8
+		cycle      = 6
 	)
+	f2 := make(fishes)
 
-	for i := 0; i < days; i++ {
-		for j := range f {
-			if f[j] == 0 {
-				f[j] = 6
-				f = append(f, firstCycle)
-				continue
-			}
-			f[j]--
+	for i := 1; i <= firstCycle; i++ {
+		if i == cycle || i == firstCycle {
+			f2[i] = f[0]
+		}
+		f2[i-1] += f[i]
+	}
+	return f2
+}
+
+func calcAnswer(f fishes) int {
+	var result int
+	for _, v := range f {
+		result += v
+	}
+	return result
+}
+
+func solve(f fishes) (int, int) {
+	const (
+		part1Days = 80
+		part2Days = 256
+	)
+	var answer1, answer2 int
+
+	for i := 0; i < part2Days; i++ {
+		f = calcFishes(f)
+		if i == part1Days-1 {
+			answer1 = calcAnswer(f)
 		}
 	}
-	return len(f)
+	answer2 = calcAnswer(f)
+
+	return answer1, answer2
 }
 
 func main() {
@@ -57,7 +80,7 @@ func main() {
 	}
 	defer file.Close()
 	f := parse(file)
-
-	fmt.Printf("First answer: %d\n", part1(f))
-	// fmt.Printf("Second answer: %d\n", part2(fishes))
+	a1, a2 := solve(f)
+	fmt.Printf("First answer: %d\n", a1)
+	fmt.Printf("Second answer: %d\n", a2)
 }
