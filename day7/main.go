@@ -54,22 +54,39 @@ func abs(i int) int {
 	return i
 }
 
-func solve(p positions) int {
-	answer := 1<<(strconv.IntSize-1) - 1
+func solve(p positions) (int, int) {
 	maxPos := max(p)
-	cnt := make(map[int]int)
+	return part1(p, maxPos), part2(p, maxPos)
+}
 
+func part1(p positions, maxPos int) int {
+	cnt := make(map[int]int)
 	for i := 0; i <= maxPos; i++ {
 		for _, v := range p {
 			cnt[i] += abs(i - v)
 		}
 	}
-	for _, v := range cnt {
-		if v < answer {
-			answer = v
+	return answer(cnt)
+}
+
+func part2(p positions, maxPos int) int {
+	cnt := make(map[int]int)
+	for i := 0; i <= maxPos; i++ {
+		for _, v := range p {
+			cnt[i] += (abs(i-v) + 1) * abs(i-v) / 2
 		}
 	}
-	return answer
+	return answer(cnt)
+}
+
+func answer(cnt map[int]int) int {
+	result := 1<<(strconv.IntSize-1) - 1
+	for _, v := range cnt {
+		if v < result {
+			result = v
+		}
+	}
+	return result
 }
 
 func main() {
@@ -79,6 +96,7 @@ func main() {
 	}
 	defer file.Close()
 	p := parse(file)
-	a := solve(p)
-	fmt.Printf("First answer: %d\n", a)
+	a1, a2 := solve(p)
+	fmt.Printf("First answer: %d\n", a1)
+	fmt.Printf("Second answer: %d\n", a2)
 }
