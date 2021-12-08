@@ -22,8 +22,8 @@ type dTable struct {
 }
 
 func parse(file io.Reader) ([][]string, [][]string) {
-	ins := make([][]string, 0)
-	outs := make([][]string, 0)
+	ins := make([][]string, 0, 10)
+	outs := make([][]string, 0, 4)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -45,48 +45,52 @@ func uniqSegments(v int) bool {
 }
 
 func decode(in map[int][]string) dTable {
-	var three, five, nine string
-	one := in[oneSeg][0]
-	seven := in[sevenSeg][0]
-	seg1 := diff(in[3][0], one)
-	for i, v := range in[5] {
-		d := diff(v, seven)
-		if len(d) == 2 {
-			three = in[5][i]
+	cnt := make(map[rune]int)
+	segments := make(map[rune]int)
+	for _, v := range in {
+		for _, s := range v {
+			for _, r := range s {
+				cnt[r]++
+			}
 		}
 	}
-	for i, v := range in[6] {
-		d := diff(v, three)
-		if len(d) == 1 {
-			nine = in[6][i]
+	/*
+			 1111
+			2    3
+			2    3
+			 4444
+			5    6
+			5    6
+			 7777
+		segments 2, 5, 6 appear a unique number of times
+	*/
+	for r, c := range cnt {
+		switch c {
+		case 4:
+			segments[r] = 5
+		case 6:
+			segments[r] = 2
+		case 7:
+			if len(diff(string(r), in[fourSeg][0])) == 1 {
+				segments[r] = 7
+				continue
+			}
+			segments[r] = 4
+
+		case 8:
+			if len(diff(string(r), in[oneSeg][0])) == 1 {
+				segments[r] = 1
+				continue
+			}
+			segments[r] = 3
+		case 9:
+			segments[r] = 6
 		}
 	}
-	for i, v := range in[5] {
-		d := diff(nine, v)
-		if len(d) == 1 && v != three {
-			five = in[5][i]
-		}
-	}
-	seg2 := diff(in[fourSeg][0], three)
-	seg3 := diff(in[fourSeg][0], five)
-	seg4 := diff(diff(in[fourSeg][0], in[3][0]), seg2)
-	seg5 := diff(diff(in[eightSeg][0], five), seg3)
-	seg6 := diff(in[oneSeg][0], seg3)
-	seg7 := diff(diff(three, in[3][0]), seg4)
-	return dTable{
-		segments: map[rune]int{
-			rune(seg1[0]): 1,
-			rune(seg2[0]): 2,
-			rune(seg3[0]): 3,
-			rune(seg4[0]): 4,
-			rune(seg5[0]): 5,
-			rune(seg6[0]): 6,
-			rune(seg7[0]): 7,
-		},
-	}
+	return dTable{segments: segments}
 }
 
-func diff(a, b string) string {
+func diff(a, b string) []rune {
 	m := make(map[rune]struct{}, len(b))
 	for _, x := range b {
 		m[x] = struct{}{}
@@ -97,7 +101,7 @@ func diff(a, b string) string {
 			d = append(d, x)
 		}
 	}
-	return string(d)
+	return d
 }
 
 func pow(i, j int) int {
