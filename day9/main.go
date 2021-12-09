@@ -11,20 +11,45 @@ import (
 	"strings"
 )
 
-type points [][]int
+type grid struct {
+	field map[point]int
+	h, w  int
+}
 
 type point struct {
 	x, y int
 }
 
-func parse(file io.Reader) points {
-	p := make(points, 0)
+func (p point) plus(p2 point) point {
+	return point{p.x + p2.x, p.y + p2.y}
+}
+
+func (g grid) inBound(p point) bool {
+	if p.x >= g.w || p.x < 0 || p.y >= g.h || p.y < 0 {
+		return false
+	}
+	return true
+}
+
+func parse(file io.Reader) [][]int {
+	p := make([][]int, 0)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		s := sliceAtoi(strings.Split(scanner.Text(), ""))
 		p = append(p, s)
 	}
 	return p
+}
+
+func newGrid(ps [][]int) grid {
+	g := grid{field: make(map[point]int)}
+	for i := range ps {
+		for j := range ps[i] {
+			g.field[point{j, i}] = ps[i][j]
+		}
+	}
+	g.h, g.w = len(ps), len(ps[0])
+	return g
 }
 
 func sliceAtoi(s []string) []int {
@@ -43,22 +68,20 @@ func mustAtoi(s string) int {
 	return i
 }
 
-func solve(ps points) (answer1, answer2 int) {
+func solve(g grid) (answer1, answer2 int) {
 	answer1, answer2 = 0, 1
-	lps := make([]point, 0, len(ps))
-	basins := make([]map[point]bool, 0, len(ps))
-
-	for i := range ps {
-		for j := range ps[i] {
-			if isLowPoint(i, j, ps) {
-				lps = append(lps, point{i, j})
-			}
+	lps := make([]point, 0, len(g.field))
+	basins := make([]map[point]bool, 0, len(g.field))
+	dirs := []point{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
+	for k := range g.field {
+		if isLowPoint(k, g, dirs) {
+			lps = append(lps, k)
 		}
 	}
 	for _, v := range lps {
-		answer1 += ps[v.x][v.y] + 1
+		answer1 += g.field[v] + 1
 		basin := make(map[point]bool)
-		allowMove(v, ps, basin)
+		findBasin(basin, v, dirs, g)
 		basins = append(basins, basin)
 	}
 
@@ -73,49 +96,29 @@ func solve(ps points) (answer1, answer2 int) {
 	return answer1, answer2
 }
 
-func isLowPoint(i, j int, ps points) bool {
+func isLowPoint(p point, g grid, ds []point) bool {
 	result := true
-	pnt := ps[i][j]
-	if j+1 < len(ps[i]) {
-		result = result && ps[i][j+1] > pnt
-	}
-	if j > 0 {
-		result = result && ps[i][j-1] > pnt
-	}
-	if i+1 < len(ps) {
-		result = result && ps[i+1][j] > pnt
-	}
-	if i > 0 {
-		result = result && ps[i-1][j] > pnt
+	for _, d := range ds {
+		if !g.inBound(p.plus(d)) {
+			continue
+		}
+		result = result && g.field[p.plus(d)] > g.field[p]
 	}
 	return result
 }
 
-func allowMove(p point, ps points, b map[point]bool) {
+func findBasin(b map[point]bool, p point, ds []point, g grid) {
 	if b[p] {
 		return
 	}
 	b[p] = true
-
-	pnt := point{p.x, p.y + 1}
-	if p.y+1 < len(ps[p.x]) && ps[p.x][p.y+1] != 9 && !b[pnt] {
+	for _, d := range ds {
+		pnt := p.plus(d)
+		if !g.inBound(pnt) || b[pnt] || g.field[pnt] == 9 {
+			continue
+		}
 		b[pnt] = false
-		allowMove(pnt, ps, b)
-	}
-	pnt = point{p.x, p.y - 1}
-	if p.y > 0 && ps[p.x][p.y-1] != 9 && !b[pnt] {
-		b[pnt] = false
-		allowMove(pnt, ps, b)
-	}
-	pnt = point{p.x + 1, p.y}
-	if p.x+1 < len(ps) && ps[p.x+1][p.y] != 9 && !b[pnt] {
-		b[pnt] = false
-		allowMove(pnt, ps, b)
-	}
-	pnt = point{p.x - 1, p.y}
-	if p.x > 0 && ps[p.x-1][p.y] != 9 && !b[pnt] {
-		b[pnt] = false
-		allowMove(pnt, ps, b)
+		findBasin(b, pnt, ds, g)
 	}
 }
 
@@ -127,8 +130,9 @@ func main() {
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	p := parse(file)
-	a1, a2 := solve(p)
+	ps := parse(file)
+	g := newGrid(ps)
+	a1, a2 := solve(g)
 	fmt.Printf("First answer: %d\n", a1)
 	fmt.Printf("Second answer: %d\n", a2)
 }
