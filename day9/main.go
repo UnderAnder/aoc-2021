@@ -7,8 +7,9 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
+
+	"aoc/pkg/helpers"
 )
 
 type grid struct {
@@ -35,7 +36,7 @@ func parse(file io.Reader) [][]int {
 	p := make([][]int, 0)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		s := sliceAtoi(strings.Split(scanner.Text(), ""))
+		s := helpers.SliceAtoi(strings.Split(scanner.Text(), ""))
 		p = append(p, s)
 	}
 	return p
@@ -50,22 +51,6 @@ func newGrid(ps [][]int) grid {
 	}
 	g.h, g.w = len(ps), len(ps[0])
 	return g
-}
-
-func sliceAtoi(s []string) []int {
-	result := make([]int, 0, len(s))
-	for _, v := range s {
-		result = append(result, mustAtoi(v))
-	}
-	return result
-}
-
-func mustAtoi(s string) int {
-	i, err := strconv.Atoi(s)
-	if err != nil {
-		log.Fatal("can't parse int from input")
-	}
-	return i
 }
 
 func solve(g grid) (answer1, answer2 int) {
