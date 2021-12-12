@@ -7,7 +7,8 @@ import (
 	"log"
 	"os"
 	"strings"
-	"unicode"
+
+	"aoc/pkg/helpers"
 )
 
 type graph struct {
@@ -17,7 +18,7 @@ type graph struct {
 type vertex struct {
 	key      string
 	adjacent []*vertex
-	visited  bool
+	visited  int
 }
 
 func (g *graph) addVertex(k string) {
@@ -78,44 +79,32 @@ func (v *vertex) contains(k string) bool {
 
 func (g graph) String() {
 	for _, v := range g.vertices {
-		fmt.Printf("\nVertex %s : ", v.key)
+		fmt.Printf("\nVertex %s: ", v.key)
 		for _, vv := range v.adjacent {
-			fmt.Printf(" %v ", vv.key)
+			fmt.Printf("%s ", vv.key)
 		}
 	}
 	fmt.Println()
 }
 
-func (g *graph) traverse(start *vertex) int {
+func (g *graph) traverse(vert *vertex, twice bool) int {
 	var cnt int
-	if isLower(start.key) {
-		start.visited = true
+	if vert.key == "end" {
+		return cnt + 1
 	}
-	if start.key == "end" {
-		cnt++
-	}
-	for _, v := range start.adjacent {
-		if v.visited {
+	for _, v := range vert.adjacent {
+		notToVisit := helpers.IsLower(v.key) && (v.key == "start" || twice) && v.visited != 0
+		if notToVisit {
 			continue
 		}
-		v.visited = false
-		cnt += g.traverse(v)
+		v.visited++
+		cnt += g.traverse(v, twice || helpers.IsLower(v.key) && v.visited == 2)
+		v.visited--
 	}
-	start.visited = false
 	return cnt
 }
 
-func isLower(s string) bool {
-	for _, r := range s {
-		if !unicode.IsLower(r) && unicode.IsLetter(r) {
-			return false
-		}
-	}
-	return true
-}
-
-func solve(lines []string) int {
-	var answer int
+func solve(lines []string) (answer1, answer2 int) {
 	g := graph{}
 	for _, line := range lines {
 		s := strings.Split(line, "-")
@@ -126,10 +115,12 @@ func solve(lines []string) int {
 	g.String()
 	vert, err := g.getVertex("start")
 	if err != nil {
-		return 0
+		return 0, 0
 	}
-	answer = g.traverse(vert)
-	return answer
+	vert.visited = 1
+	answer1 = g.traverse(vert, true)
+	answer2 = g.traverse(vert, false)
+	return answer1, answer2
 }
 
 func parse(file io.Reader) []string {
@@ -151,6 +142,7 @@ func main() {
 		_ = file.Close()
 	}(file)
 	ps := parse(file)
-	a1 := solve(ps)
+	a1, a2 := solve(ps)
 	fmt.Printf("First answer: %d\n", a1)
+	fmt.Printf("Second answer: %d\n", a2)
 }

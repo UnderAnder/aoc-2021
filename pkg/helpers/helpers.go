@@ -3,6 +3,7 @@ package helpers
 import (
 	"log"
 	"strconv"
+	"unicode"
 )
 
 // SliceAtoi convert slice of strings to slice of integers
@@ -33,4 +34,13 @@ func PowInt(x, y int) int {
 		result *= x
 	}
 	return result
+}
+
+func IsLower(s string) bool {
+	for _, r := range s {
+		if !unicode.IsLower(r) && unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return true
 }
