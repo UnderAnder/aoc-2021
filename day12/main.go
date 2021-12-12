@@ -12,7 +12,7 @@ import (
 )
 
 type graph struct {
-	vertices []*vertex
+	vertices map[string]*vertex
 }
 
 type vertex struct {
@@ -25,7 +25,7 @@ func (g *graph) addVertex(k string) {
 	if g.contains(k) {
 		return
 	}
-	g.vertices = append(g.vertices, &vertex{key: k})
+	g.vertices[k] = &vertex{key: k}
 }
 
 func (g *graph) addEdge(key1, key2 string) {
@@ -50,20 +50,16 @@ func (v *vertex) add(vert *vertex) {
 	v.adjacent = append(v.adjacent, vert)
 }
 
-func (g *graph) getVertex(key string) (*vertex, error) {
-	for i, v := range g.vertices {
-		if v.key == key {
-			return g.vertices[i], nil
-		}
+func (g *graph) getVertex(k string) (*vertex, error) {
+	if _, ok := g.vertices[k]; ok {
+		return g.vertices[k], nil
 	}
-	return &vertex{}, fmt.Errorf("vertex %v do not exist", key)
+	return &vertex{}, fmt.Errorf("vertex %v do not exist", k)
 }
 
 func (g *graph) contains(k string) bool {
-	for _, v := range g.vertices {
-		if k == v.key {
-			return true
-		}
+	if _, ok := g.vertices[k]; ok {
+		return true
 	}
 	return false
 }
@@ -104,10 +100,11 @@ func (g *graph) traverse(vert *vertex, twice bool) int {
 	return cnt
 }
 
-func solve(lines []string) (answer1, answer2 int) {
-	g := graph{}
-	for _, line := range lines {
-		s := strings.Split(line, "-")
+func solve(file io.Reader) (answer1, answer2 int) {
+	g := graph{vertices: make(map[string]*vertex)}
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		s := strings.Split(scanner.Text(), "-")
 		g.addVertex(s[0])
 		g.addVertex(s[1])
 		g.addEdge(s[0], s[1])
@@ -123,16 +120,6 @@ func solve(lines []string) (answer1, answer2 int) {
 	return answer1, answer2
 }
 
-func parse(file io.Reader) []string {
-	p := make([]string, 0, 20)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		s := scanner.Text()
-		p = append(p, s)
-	}
-	return p
-}
-
 func main() {
 	file, err := os.Open("input.txt")
 	if err != nil {
@@ -141,8 +128,7 @@ func main() {
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	ps := parse(file)
-	a1, a2 := solve(ps)
+	a1, a2 := solve(file)
 	fmt.Printf("First answer: %d\n", a1)
 	fmt.Printf("Second answer: %d\n", a2)
 }
