@@ -147,11 +147,33 @@ func (g grid) findPath(start, end point) ([]point, int) {
 	return final, dist[end]
 }
 
-func solve(file io.Reader) int {
+func part1(file io.Reader) int {
 	g := newGrid(parse(file))
 	start := point{0, 0}
 	end := point{g.h - 1, g.w - 1}
 	_, cost := g.findPath(start, end)
+	return cost
+}
+
+func part2(file io.Reader) int {
+	p := parse(file)
+	pp := make([][]int, len(p)*5)
+	for i := range pp {
+		pp[i] = make([]int, len(p[0])*5)
+	}
+	for i := 0; i < len(pp); i++ {
+		for j := 0; j < len(pp[0]); j++ {
+			pp[i][j] = (p[i%len(p)][j%len(p[0])] + j/len(p[0]) + i/len(p)) % 9
+			if pp[i][j] == 0 {
+				pp[i][j] = 9
+			}
+		}
+	}
+	g := newGrid(pp)
+	start := point{0, 0}
+	end := point{g.h - 1, g.w - 1}
+	path, cost := g.findPath(start, end)
+	log.Println(path)
 	return cost
 }
 
@@ -173,6 +195,6 @@ func main() {
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	a1 := solve(file)
+	a1 := part2(file)
 	fmt.Println("First answer: ", a1)
 }
