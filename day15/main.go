@@ -95,7 +95,7 @@ func newGrid(ps [][]int) grid {
 	return g
 }
 
-func (g grid) findPath(start, end point) ([]point, int) {
+func (g grid) findPath(start, end point) int {
 	visited := make(map[point]struct{})
 	dist := make(map[point]int)
 	prev := make(map[point]point)
@@ -109,13 +109,11 @@ func (g grid) findPath(start, end point) ([]point, int) {
 	q.add(start, g)
 	for len(q.items) != 0 {
 		v := q.lpop()
-
 		if _, ok := visited[v]; ok {
 			continue
 		}
 		visited[v] = struct{}{}
 		near := v.neighbors()
-
 		for _, val := range near {
 			if !g.inBound(val) {
 				continue
@@ -124,38 +122,17 @@ func (g grid) findPath(start, end point) ([]point, int) {
 				continue
 			}
 			if dist[v]+g.field[val] < dist[val] {
-				store := val
-
 				dist[val] = dist[v] + g.field[val]
 				g.field[val] += dist[v]
 				prev[val] = v
-				q.add(store, g)
+				q.add(val, g)
 			}
 		}
 	}
-	pathval := prev[end]
-	var final []point
-	final = append(final, end)
-	for pathval != start {
-		final = append(final, pathval)
-		pathval = prev[pathval]
-	}
-	final = append(final, pathval)
-	for i, j := 0, len(final)-1; i < j; i, j = i+1, j-1 {
-		final[i], final[j] = final[j], final[i]
-	}
-	return final, dist[end]
+	return dist[end]
 }
 
-func part1(file io.Reader) int {
-	g := newGrid(parse(file))
-	start := point{0, 0}
-	end := point{g.h - 1, g.w - 1}
-	_, cost := g.findPath(start, end)
-	return cost
-}
-
-func part2(file io.Reader) int {
+func solve(file io.Reader) (answer1, answer2 int) {
 	p := parse(file)
 	pp := make([][]int, len(p)*5)
 	for i := range pp {
@@ -169,12 +146,15 @@ func part2(file io.Reader) int {
 			}
 		}
 	}
-	g := newGrid(pp)
 	start := point{0, 0}
+	g := newGrid(p)
 	end := point{g.h - 1, g.w - 1}
-	path, cost := g.findPath(start, end)
-	log.Println(path)
-	return cost
+	answer1 = g.findPath(start, end)
+
+	gg := newGrid(pp)
+	end = point{gg.h - 1, gg.w - 1}
+	answer2 = gg.findPath(start, end)
+	return answer1, answer2
 }
 
 func parse(file io.Reader) [][]int {
@@ -195,6 +175,7 @@ func main() {
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	a1 := part2(file)
+	a1, a2 := solve(file)
 	fmt.Println("First answer: ", a1)
+	fmt.Println("Second answer: ", a2)
 }
