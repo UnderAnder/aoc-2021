@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"log"
+	"math"
 	"strconv"
 	"unicode"
 )
@@ -43,4 +44,40 @@ func IsLower(s string) bool {
 		}
 	}
 	return true
+}
+
+func Sum(s []int) int {
+	res := 0
+	for i := range s {
+		res += s[i]
+	}
+	return res
+}
+
+func Mul(s []int) int {
+	res := 1
+	for i := range s {
+		res *= s[i]
+	}
+	return res
+}
+
+func Min(s []int) int {
+	res := math.MaxInt64
+	for i := range s {
+		if s[i] < res {
+			res = s[i]
+		}
+	}
+	return res
+}
+
+func Max(s []int) int {
+	res := 0
+	for i := range s {
+		if s[i] > res {
+			res = s[i]
+		}
+	}
+	return res
 }
