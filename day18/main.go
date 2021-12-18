@@ -2,10 +2,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"os"
+	"strings"
 )
 
 type pair struct {
@@ -33,7 +35,7 @@ func (p *pair) reduce() {
 	p.x.parent = p
 	p.y.parent = p
 	for {
-		if ok := p.explode(0, false); ok {
+		if ok := p.explode(0); ok {
 			continue
 		}
 		if ok := p.split(); ok {
@@ -43,10 +45,10 @@ func (p *pair) reduce() {
 	}
 }
 
-func (p *pair) explode(depth int, isExplode bool) bool {
+func (p *pair) explode(depth int) bool {
 	depth++
 	if p.isNum {
-		return isExplode
+		return false
 	}
 	if depth > 4 && p.x.isNum && p.y.isNum {
 		x, y := p.x.num, p.y.num
@@ -58,9 +60,9 @@ func (p *pair) explode(depth int, isExplode bool) bool {
 		p.num = 0
 		return true
 	}
-	isExplode = p.x.explode(depth, isExplode)
+	isExplode := p.x.explode(depth)
 	if !isExplode {
-		isExplode = p.y.explode(depth, isExplode)
+		isExplode = p.y.explode(depth)
 	}
 	return isExplode
 
@@ -132,14 +134,34 @@ func (p *pair) String() string {
 	return fmt.Sprintf("[%s,%s]", p.x, p.y)
 }
 
+func part2(file io.Reader) (answer2 int) {
+	max := 0
+	buf := bytes.NewBuffer(nil)
+	io.Copy(buf, file)
+	lines := strings.Split(buf.String(), "\n")
+	for i := 0; i < len(lines); i++ {
+		for j := 0; j < len(lines); j++ {
+			if i == j || lines[i] == "" || lines[j] == "" {
+				continue
+			}
+			p1, _ := parse(nil, lines[i])
+			p2, _ := parse(nil, lines[j])
+			p := &pair{x: p1, y: p2}
+			p.reduce()
+			if m := p.magnitude(); m > max {
+				max = m
+			}
+		}
+	}
+	return max
+}
+
 func part1(file io.Reader) (answer1 int) {
 	scanner := bufio.NewScanner(file)
 	scanner.Scan()
 	p, _ := parse(nil, scanner.Text())
 	for scanner.Scan() {
 		p2, _ := parse(nil, scanner.Text())
-		log.Println(p.String())
-		log.Println(p2.String())
 		p = &pair{
 			x:      p,
 			y:      p2,
@@ -160,6 +182,10 @@ func main() {
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	a1 := part1(file)
+	buf1 := &bytes.Buffer{}
+	buf2 := io.TeeReader(file, buf1)
+	a1 := part1(buf2)
+	a2 := part2(buf1)
 	fmt.Printf("First answer: %d\n", a1)
+	fmt.Printf("Second answer: %d\n", a2)
 }
