@@ -35,20 +35,26 @@ func search(dx, dy int, target map[string]int) (int, bool) {
 	}
 }
 
-func solve(file io.Reader) (answer1 int) {
+func solve(file io.Reader) (answer1, answer2 int) {
 	target := parse(file)
 	log.Println(target)
 	maxHeight := 0
+	cnt := 0
 	for i := 0; i < 300; i++ {
 		for j := target["yMin"]; j < 300; j++ {
 			h, ok := search(i, j, target)
-			if ok && h > maxHeight {
-				maxHeight = h
+			if ok {
+				cnt++
+				if h > maxHeight {
+					maxHeight = h
+				}
 			}
 		}
 	}
 	answer1 = maxHeight
-	return answer1
+	answer2 = cnt
+
+	return answer1, answer2
 }
 
 func parse(file io.Reader) map[string]int {
@@ -74,6 +80,7 @@ func main() {
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	a1 := solve(file)
+	a1, a2 := solve(file)
 	fmt.Println("First answer: ", a1)
+	fmt.Println("Second answer: ", a2)
 }
