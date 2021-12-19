@@ -81,3 +81,35 @@ func Max(s []int) int {
 	}
 	return res
 }
+
+func Abs(i int) int {
+	if i < 0 {
+		return -i
+	}
+	return i
+}
+
+func Intersection(i1, i2 []int) []int {
+	result := make([]int, 0, len(i1))
+	hash := make(map[int]bool)
+	for _, e := range i1 {
+		hash[e] = false
+	}
+	for _, e := range i2 {
+		if v, ok := hash[e]; ok && !v {
+			hash[e] = true
+			result = append(result, e)
+
+		}
+	}
+
+	return result
+}
+
+func Counter(s []int) map[int]int {
+	result := make(map[int]int)
+	for i := range s {
+		result[s[i]]++
+	}
+	return result
+}
