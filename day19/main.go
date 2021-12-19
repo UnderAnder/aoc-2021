@@ -41,6 +41,7 @@ func (p point) sub(p2 point) point {
 
 type scanner struct {
 	points []point
+	offset point
 }
 
 func (s scanner) matches(points []point) (offset point, ok bool) {
@@ -107,38 +108,70 @@ func move(s []point, offset point) []point {
 	return result
 }
 
-func solve(file io.Reader) (answer1 int) {
+func solve(file io.Reader) (answer1, answer2 int) {
 	scanners := parse(file)
-	counter := counter{}
+	cnt := counter{}
 	solved := make([]scanner, 0, 30)
 	solved = append(solved, scanners[0])
-	counter.add(solved[0].points)
-	unsolved := scanners
+	cnt.add(solved[0].points)
+	unsolved := scanners[1:]
 	for len(unsolved) > 0 {
-	unsolved:
 		for i := 0; i < len(unsolved); i++ {
-			for f := 1; f <= 6; f++ {
-				for r := 1; r <= 4; r++ {
-					reoriented := unsolved[i].orientation(f, r)
-					for j := range solved {
-						offset, ok := solved[j].matches(reoriented)
-						if !ok {
-							continue
-						}
-						s := scanner{
-							points: move(reoriented, offset),
-						}
-						counter.add(s.points)
-						unsolved[i] = unsolved[len(unsolved)-1]
-						unsolved = unsolved[:len(unsolved)-1]
-						solved = append(solved, s)
-						break unsolved
-					}
-				}
+			s, ok := brute(unsolved[i], solved)
+			if !ok {
+				continue
+			}
+			solved = append(solved, s)
+			cnt.add(s.points)
+			unsolved[i] = unsolved[len(unsolved)-1]
+			unsolved = unsolved[:len(unsolved)-1]
+			break
+		}
+		fmt.Println("Unsolved remain: ", len(unsolved))
+	}
+	max := part2(solved)
+
+	return len(cnt), max
+}
+
+func part2(solved []scanner) int {
+	max := 0
+	for i := 0; i < len(solved); i++ {
+		for j := 0; j < len(solved); j++ {
+			if i == j {
+				continue
+			}
+			d := distance(solved[i].offset, solved[j].offset)
+			if d > max {
+				max = d
 			}
 		}
 	}
-	return len(counter)
+	return max
+}
+
+func brute(s scanner, solved []scanner) (scanner, bool) {
+	for f := 1; f <= 6; f++ {
+		for r := 1; r <= 4; r++ {
+			reoriented := s.orientation(f, r)
+			for j := range solved {
+				offset, ok := solved[j].matches(reoriented)
+				if !ok {
+					continue
+				}
+				match := scanner{
+					points: move(reoriented, offset),
+					offset: offset,
+				}
+				return match, true
+			}
+		}
+	}
+	return scanner{}, false
+}
+
+func distance(s1, s2 point) int {
+	return helpers.Abs(s1.x-s2.x) + helpers.Abs(s1.y-s2.y) + helpers.Abs(s1.z-s2.z)
 }
 
 func parse(file io.Reader) []scanner {
@@ -176,6 +209,7 @@ func main() {
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	a1 := solve(file)
+	a1, a2 := solve(file)
 	fmt.Println("First answer: ", a1)
+	fmt.Println("Second answer: ", a2)
 }
