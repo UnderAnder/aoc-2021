@@ -24,35 +24,34 @@ func (g grid) neighbors(p point) []bool {
 	bs := make([]bool, 0, 9)
 	for i := -1; i <= 1; i++ {
 		for j := -1; j <= 1; j++ {
+			v, ok := g.field[point{p.x + j, p.y + i}]
 			// pixels are lit out of the field
-			if g.zeroLit && (p.x+j <= -g.iter || p.x+j > g.h+g.iter || p.y+i <= -g.iter || p.y+i > g.w+g.iter) {
+			if !ok && g.zeroLit && g.iter%2 == 0 {
 				bs = append(bs, true)
 				continue
 			}
-			bs = append(bs, g.field[point{p.x + j, p.y + i}])
+			bs = append(bs, v)
 		}
 	}
 	return bs
 }
 
 func (g grid) getNum(p point) int {
-	num := 0
+	var num uint16
 	bs := g.neighbors(p)
 	for i := 0; i < len(bs); i++ {
 		if bs[i] {
 			num |= 1 << (len(bs) - 1 - i)
-			continue
 		}
-		num |= 0 << (len(bs) - 1 - i)
 	}
-	return num
+	return int(num)
 }
 
 func (g grid) String() string {
 	sb := strings.Builder{}
 	sb.WriteString("\n")
-	for i := -5; i < g.h+5; i++ {
-		for j := -5; j < g.w+5; j++ {
+	for i := -g.iter; i < g.h+g.iter; i++ {
+		for j := -g.iter; j < g.w+g.iter; j++ {
 			v := g.field[point{j, i}]
 			if !v {
 				sb.WriteString(".")
@@ -79,33 +78,38 @@ func newGrid(ps [][]bool) grid {
 func (g *grid) enhance(algo map[int]bool) {
 	out := make(map[point]bool)
 	g.iter++
-
 	for i := -g.iter; i < g.h+g.iter; i++ {
 		for j := -g.iter; j < g.w+g.iter; j++ {
 			k := point{j, i}
 			num := g.getNum(k)
-			pixel := algo[num]
-			out[k] = pixel
+			out[k] = algo[num]
 		}
 	}
 	g.field = out
 }
 
-func solve(file io.Reader) (answer1 int) {
+func solve(file io.Reader) (answer1, answer2 int) {
 	algo, in := parse(file)
 	inp := newGrid(in)
 	inp.zeroLit = algo[0]
 
-	inp.enhance(algo)
-	inp.enhance(algo)
-	log.Println(inp)
+	for i := 0; i < 50; i++ {
+		inp.enhance(algo)
+		if i == 1 {
+			for _, b := range inp.field {
+				if b {
+					answer1++
+				}
+			}
+		}
+	}
 	for _, b := range inp.field {
 		if b {
-			answer1++
+			answer2++
 		}
 	}
 
-	return answer1
+	return answer1, answer2
 }
 
 func parse(file io.Reader) (map[int]bool, [][]bool) {
@@ -137,6 +141,7 @@ func main() {
 	defer func(file *os.File) {
 		_ = file.Close()
 	}(file)
-	a1 := solve(file)
+	a1, a2 := solve(file)
 	fmt.Println("First answer: ", a1)
+	fmt.Println("Second answer: ", a2)
 }
