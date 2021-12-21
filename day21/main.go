@@ -1,16 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"log"
-	"os"
-	"strconv"
-	"strings"
-
-	"aoc/pkg/helpers"
 )
+
+type state struct {
+	players [2]player
+	turn    int
+}
 
 type player struct {
 	pos, score int
@@ -18,7 +15,7 @@ type player struct {
 
 func (p *player) move(die int) {
 	p.pos += die
-	p.pos = p.pos % 10
+	p.pos %= 10
 	if p.pos == 0 {
 		p.pos = 10
 	}
@@ -41,8 +38,8 @@ func deterministicDie() func() int {
 	}
 }
 
-func solve(file io.Reader) (answer1 int) {
-	players := parse(file)
+func part1() (answer1 int) {
+	players := [2]player{{4, 0}, {10, 0}}
 	gen := deterministicDie()
 	rolls := 0
 	loser := -1
@@ -60,42 +57,46 @@ func solve(file io.Reader) (answer1 int) {
 	return answer1
 }
 
-func answer(m map[string]int) int {
-	uniqChars := make(map[uint8]int)
-	for k, v := range m {
-		uniqChars[k[1]] += v
+func winCounter(state state, cache map[state][2]int) [2]int {
+	if v, ok := cache[state]; ok {
+		return v
 	}
-	min, max := 1<<(strconv.IntSize-1)-1, 0
-	for _, v := range uniqChars {
-		if v < min {
-			min = v
-		}
-		if v > max {
-			max = v
+	var result [2]int
+	for die1 := 1; die1 <= 3; die1++ {
+		for die2 := 1; die2 <= 3; die2++ {
+			for die3 := 1; die3 <= 3; die3++ {
+				die := die1 + die2 + die3
+				s := state
+				s.players[s.turn].move(die)
+				if s.players[s.turn].score >= 21 {
+					result[s.turn]++
+					continue
+				}
+				s.turn++
+				s.turn %= 2
+				win := winCounter(s, cache)
+				result[0] += win[0]
+				result[1] += win[1]
+			}
 		}
 	}
-	return max - min
+	cache[state] = result
+	return result
 }
 
-func parse(file io.Reader) []player {
-	players := make([]player, 0, 2)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		pos := strings.Split(scanner.Text(), " ")
-		players = append(players, player{helpers.MustAtoi(pos[4]), 0})
+func part2() (answer2 int) {
+	s := state{[2]player{{4, 0}, {10, 0}}, 0}
+	cache := make(map[state][2]int)
+	cnt := winCounter(s, cache)
+	answer2 = cnt[0]
+	if cnt[1] > cnt[0] {
+		answer2 = cnt[1]
 	}
-	return players
+	return answer2
 }
 
 func main() {
-	file, err := os.Open("input.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func(file *os.File) {
-		_ = file.Close()
-	}(file)
-	a1 := solve(file)
+	a1, a2 := part1(), part2()
 	fmt.Println("First answer: ", a1)
-	// fmt.Println("Second answer: ", a2)
+	fmt.Println("Second answer: ", a2)
 }
